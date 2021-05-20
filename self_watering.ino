@@ -2,6 +2,7 @@
 #include <LiquidCrystal.h>
 
 #define water_sensor A0
+#define soil_moisture A1
 #define power 7
 #define button 8
 #define relayModule 6
@@ -10,7 +11,8 @@ int buttonState = 0;
 boolean currentState = false;
 boolean previousState = false;
 
-int value = 0;
+int waterSensorValue = 0;
+int soilMoistureValue = 0;
 int page = 0;
 int counter = 0;
 
@@ -19,11 +21,16 @@ long interval = 259200000;
 long timeRemaining = 0;
 
 long waterTimestamp = 0;
-long waterTime = 60000;
+long waterTime = 5000;
 long waterRemaining = 0;
 
 double percent = 0;
 double maxVal = 180;
+double maxValSoil = 535;
+double minValSoil = 250;
+double drySoilVal = 515;
+double wetSoilVal = 300;
+boolean waterToggle = false;
 
 // initialize the library by associating any needed LCD interface pin
 // with the arduino pin number it is connected to
@@ -37,6 +44,7 @@ void setup() {
   Serial.begin(9600);
   pinMode(power, OUTPUT);
   pinMode(water_sensor, INPUT);
+  pinMode(soil_moisture, INPUT);
   //pinMode(led, OUTPUT);
   digitalWrite(power, LOW);
 
@@ -52,14 +60,18 @@ void loop() {
   // Read from sensor
   digitalWrite(power, HIGH);
   delay(10);
-  value = analogRead(water_sensor);
-  percent = value / maxVal * 100;
+  waterSensorValue = analogRead(water_sensor);
+  soilMoistureValue = analogRead(soil_moisture);
+  //percent = waterSensorValue / maxVal * 100;
+  percent = (maxValSoil - soilMoistureValue) / (maxValSoil - minValSoil) * 100;
   digitalWrite(power, LOW);
 
   // Print on console
-//  Serial.print("Sensor value: ");
-//  Serial.print(value);
-//  Serial.println();
+  //Serial.print("Water sensor value: ");
+  //Serial.print(waterSensorValue);
+  Serial.print("Soil Moisture sensor value: ");
+  Serial.print(soilMoistureValue);
+  Serial.println();
 
   // Read button/set states
   previousState = currentState;
@@ -87,23 +99,47 @@ void loop() {
 //    digitalWrite(relayModule, HIGH);
 //  }
 //  timeRemaining = interval - (millis() - timestamp);
-  timeRemaining = interval - (millis() - timestamp);
-  if (timeRemaining < 0) {
-    timestamp = millis();
-    waterTimestamp = millis();
-  }
-  waterRemaining = waterTime - (millis() - waterTimestamp);
-  if (waterRemaining > 0) {
+
+//  timeRemaining = interval - (millis() - timestamp);
+//  if (timeRemaining < 0) {
+//    timestamp = millis();
+//    waterTimestamp = millis();
+//  }
+
+//  if (soilMoistureValue > drySoilVal) {
+//    waterTimestamp = millis();
+//  }
+
+//  waterRemaining = waterTime - (millis() - waterTimestamp);
+//  if (waterRemaining > 0) {
+//    digitalWrite(relayModule, LOW);
+//  } else {
+//    digitalWrite(relayModule, HIGH);
+//  }
+
+//  if (soilMoistureValue > drySoilVal) {
+//    digitalWrite(relayModule, HIGH);
+//  } else {
+//    waterToggle = true;
+//    if (soilMoistureValue < wetSoilVal) {
+//      waterToggle = false;
+//    }
+//    if (waterToggle) {
+//      digitalWrite(relayModule, LOW);
+//    }
+//  }
+
+  if (soilMoistureValue > drySoilVal) {
     digitalWrite(relayModule, LOW);
-  } else {
+  } else if (soilMoistureValue < wetSoilVal) {
     digitalWrite(relayModule, HIGH);
   }
 
-  Serial.print("Time remaining: ");
-  Serial.print(timeRemaining);
-  Serial.print(" Water Time remaining: ");
-  Serial.print(waterRemaining);
-  Serial.println();
+//  Serial.print("Time remaining: ");
+//  Serial.print(timeRemaining);
+//  Serial.print(" Water Time remaining: ");
+//  Serial.print(waterRemaining);
+//  Serial.println();
 
   lcd.setCursor(0, 0);
   lcd.print("                ");
@@ -160,4 +196,3 @@ void loop() {
 //    counter = 0;
 //  }
 }
-
